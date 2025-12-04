@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Модель АТС - Анализ авиационных катастроф</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/scripts.js" defer></script>
+</head>
+<body>
+<div>
+    <header>
+        <ul class="nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" data-tab="params">Параметры модели</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-tab="graphs">Графики характеристик</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-tab="diagrams">Диаграммы</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-tab="faks">Возмущения</a>
+            </li>
+        </ul>
+    </header>
+    
+    <div class="all">
+        <!-- Вкладка параметров -->
+        <div id="params-tab" class="tab-content active">
+            <h1 class="page-title">Модель АТС - Анализ авиационных катастроф</h1>
+            <p class="page-subtitle">Моделирование системы авиационной транспортной безопасности на основе системно-динамического подхода</p>
+         
+            
+            <form id="fullForm" method="post">
+                <div class="top-row">
+                    <!-- Блок возмущений -->
+                    <div class="half-width-col">
+                        <div class="section-title">Возмущения</div>
+                        <div class="characteristics-container fixed-height">
+                            {% for i in range(1,6) %}
+                            <div class="block-function">
+                                <div class="block-function-content">
+                                    <div class="function-label">F{{ i | subscript }}(t) =</div>
+                                    <div class="function-inputs">
+                                        <div class="input-group">
+                                            <input class="faks-input" name="fak{{ i }}_a" 
+                                                   value="{{ (values.faks[i-1][0] if values else defaults.faks[i-1][0]) }}"
+                                                   placeholder="0.5" 
+                                                   type="text" />
+                                          
+                                        </div>
+                                        <span class="formula-text">+</span>
+                                        <div class="input-group">
+                                            <input class="faks-input" name="fak{{ i }}_b" 
+                                                   value="{{ (values.faks[i-1][1] if values else defaults.faks[i-1][1]) }}"
+                                                   placeholder="0.0" 
+                                                   type="text" />
+                                
+                                        </div>
+                                        <span class="formula-text">·t</span>
+                                    </div>
+                                    <span class="faks-description">
+                                        {% if i == 1 %}Средняя выработка ресурса до списания{% endif %}
+                                        {% if i == 2 %}Доля иностранных воздушных судов{% endif %}
+                                        {% if i == 3 %}Средний лётный стаж пилотов{% endif %}
+                                        {% if i == 4 %}Стоимость авиационного топлива{% endif %}
+                                        {% if i == 5 %}Количество нормативно-правовых актов{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Блок уравнений характеристик -->
+                    <div class="half-width-col">
+                        <div class="section-title">Внутренние функции модели</div>
+                        <div class="equations-container scrollable-fixed-height">
+                            {% for i in range(1,19) %}
+                                {% set u_var = get_u_variable_for_equation(i) %}
+                                {% set u_subscript = u_var | subscript %}
+                                <div class="block-function">
+                                    <div class="block-function-content">
+                                        <div class="function-label">f{{ i | subscript }}(X{{ u_subscript }}) =</div>
+                                        <div class="eq-expression">
+                                            <div class="input-group">
+                                                <input class="equation-input" name="f{{ i }}_k" 
+                                                       value="{{ (values.equations[i-1][0] if values else defaults.equations[i-1][0]) }}"
+                                                       placeholder="0.5" 
+                                                       type="text" />
+                                              
+                                            </div>
+                                            <span class="formula-text">·X{{ u_subscript }} +</span>
+                                            <div class="input-group">
+                                                <input class="equation-input" name="f{{ i }}_b" 
+                                                       value="{{ (values.equations[i-1][1] if values else defaults.equations[i-1][1]) }}"
+                                                       placeholder="0.5" 
+                                                       type="text" />
+                                            
+                                            </div>
+                                        </div>
+                                       
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Начальные условия и ограничения -->
+                <div class="compact-initial-container">
+                    <div class="section-title">Начальные условия и пределы характеристик</div>
+                    <div class="compact-initial-header">
+                        <div class="label-col">Характеристика системы</div>
+                        <div class="value-col">Начальное условие</div>
+                        <div class="limit-col">Предельное значение</div>
+                    </div>
+
+                    {% for i in range(1,9) %}
+                    <div class="compact-initial-row">
+                        <div class="label-col">
+                            <div class="u-label">{{ u_labels[i-1] }}</div>
+                        </div>
+                        <div class="value-col">
+                            <div class="input-group">
+                                <input name="u{{ i }}" 
+                                       value="{{ (values.u[i-1] if values else defaults.u[i-1]) }}" 
+                                       placeholder="0.5" 
+                                       type="text" />
+                              
+                            </div>
+                        </div>
+                        <div class="limit-col">
+                            <div class="input-group">
+                                <input name="u_restrictions{{ i }}" 
+                                       value="{{ (values.u_restrictions[i-1] if values else defaults.u_restrictions[i-1]) }}" 
+                                       placeholder="1.0" 
+                                       type="text" />
+                              
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Панель управления -->
+                <div class="control-panel-light">
+                    <div class="panel-title">Управление расчетами</div>
+                    <div class="line-and-buttons">
+                        <div class="status-line">
+                            <span>Статус:</span>
+                            <input type="text" readonly id="status-input" value="Готов к расчетам" class="status-ready">
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="submit" class="btn-calculate" id="calculate-btn">Вычислить</button>
+                            <button type="button" class="btn-refresh" id="random-fill-btn">Заполнить случайно</button>
+                            <button type="button" class="btn-clear" id="clear-btn">Очистить форму</button>
+                        
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Вкладка графиков -->
+        <div id="graphs-tab" class="tab-content">
+            <div class="graphic-section">
+                <h2 class="page-title">Графики характеристик системы</h2>
+                <p class="page-subtitle">Динамика характеристик X₁–X₈ во времени (t ∈ [0, 1])</p>
+                
+                {% if ran %}
+                <div class="image-container" id="graphic-container">
+                    <img src="data:image/png;base64,{{ images_b64.figure1 }}" id="graphic-image" class="graphic-img">
+                </div>
+                
+                
+                <div class="graphic-info">
+                    <h3 class="info-title">Описание характеристик:</h3>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #1f77b4;"></div>
+                            <span>X₁ - Среднее количество нарушений инструкций пилотами</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #ff7f0e;"></div>
+                            <span>X₂ - Доля частных судов в авиации</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #2ca02c;"></div>
+                            <span>X₃ - Показатель активности органов контроля</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #d62728;"></div>
+                            <span>X₄ - Количество сотрудников в метеослужбах</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #9467bd;"></div>
+                            <span>X₅ - Катастрофы из-за метеоусловий</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #8c564b;"></div>
+                            <span>X₆ - Катастрофы из-за технических неисправностей</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #e377c2;"></div>
+                            <span>X₇ - Катастрофы из-за человеческого фактора</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #7f7f7f;"></div>
+                            <span>X₈ - Общее количество катастроф</span>
+                        </div>
+                    </div>
+                    
+          
+                </div>
+                {% else %}
+                <div class="no-data-message">
+                    <h3>Графики пока недоступны</h3>
+                    <p>Заполните параметры модели на вкладке "Параметры модели" и нажмите «Вычислить модель» для визуализации результатов.</p>
+                    <button type="button" class="btn-calculate switch-to-params-btn">
+                        Перейти к параметрам
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Вкладка диаграмм -->
+        <div id="diagrams-tab" class="tab-content">
+            <div class="diagrams-section">
+                <h2 class="page-title">Диаграммы характеристик</h2>
+                <p class="page-subtitle">Состояние системы в различные моменты времени</p>
+                
+                <div class="legend-diagrams">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: red;"></div>
+                        <span>Начальные условия (t = 0)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: blue;"></div>
+                        <span>Текущие значения</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: green; border: 1px dashed #000;"></div>
+                        <span>Предельные значения</span>
+                    </div>
+                </div>
+                
+                {% if ran %}
+                <div class="diagrams-grid" id="diagrams-grid">
+                    <div class="diagram-item">
+                        <h3>Начальный момент времени (t = 0)</h3>
+                 
+                        <div class="image-container">
+                            <img src="data:image/png;base64,{{ images_b64.diagram1 }}" class="diagram-img" id="diagram1">
+                        </div>
+                    </div>
+                    
+                    <div class="diagram-item">
+                        <h3>1 четверть времени (t = 0.25)</h3>
+                     
+                        <div class="image-container">
+                            <img src="data:image/png;base64,{{ images_b64.diagram2 }}" class="diagram-img" id="diagram2">
+                        </div>
+                    </div>
+                    
+                    <div class="diagram-item">
+                        <h3>2 четверть времени (t = 0.5)</h3>
+                      
+                        <div class="image-container">
+                            <img src="data:image/png;base64,{{ images_b64.diagram3 }}" class="diagram-img" id="diagram3">
+                        </div>
+                    </div>
+                    
+                    <div class="diagram-item">
+                        <h3>3 четверть времени (t = 0.75)</h3>
+                     
+                        <div class="image-container">
+                            <img src="data:image/png;base64,{{ images_b64.diagram4 }}" class="diagram-img" id="diagram4">
+                        </div>
+                    </div>
+                    
+                    <div class="diagram-item">
+                        <h3>Последний момент времени (t = 1.0)</h3>
+                      
+                        <div class="image-container">
+                            <img src="data:image/png;base64,{{ images_b64.diagram5 }}" class="diagram-img" id="diagram5">
+                        </div>
+                    </div>
+                </div>
+                
+                
+                {% else %}
+                <div class="no-data-message">
+                    <h3>Диаграммы пока недоступны</h3>
+                    <p>Заполните параметры модели на вкладке "Параметры модели" и нажмите «Вычислить модель» для построения диаграмм.</p>
+                    <button type="button" class="btn-calculate switch-to-params-btn">
+                        Перейти к параметрам
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Вкладка возмущений -->
+        <div id="faks-tab" class="tab-content">
+            <div class="disturbances-section">
+                <h2 class="page-title">График возмущений</h2>
+                <p class="page-subtitle">График изменения возмущений во времени</p>
+                
+                {% if ran %}
+                <div class="image-container" id="disturbances-container">
+                    <img src="data:image/png;base64,{{ images_b64.figure2 }}" id="disturbances-image" class="graphic-img">
+                </div>
+                
+                <div class="disturbances-info">
+                    <h3 class="info-title">Описание возмущений:</h3>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #1f77b4;"></div>
+                            <span>F₁ - Средняя выработка ресурса до списания</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #ff7f0e;"></div>
+                            <span>F₂ - Доля иностранных воздушных судов</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #2ca02c;"></div>
+                            <span>F₃ - Средний лётный стаж пилотов</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #d62728;"></div>
+                            <span>F₄ - Стоимость авиационного топлива</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #9467bd;"></div>
+                            <span>F₅ - Количество нормативно-правовых актов</span>
+                        </div>
+                    </div>
+                  
+                </div>
+                {% else %}
+                <div class="no-data-message">
+                    <h3>Графики возмущений пока недоступны</h3>
+                    <p>Заполните параметры модели на вкладке "Параметры модели" и нажмите «Вычислить модель» для анализа возмущений.</p>
+                    <button type="button" class="btn-calculate switch-to-params-btn">
+                        Перейти к параметрам
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
