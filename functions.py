@@ -1,80 +1,140 @@
-#functions.py
-import math
+
 import numpy as np
 
-# Линейные внешние факторы
-def F1(t, params):
-    a, b = params  # a + b*t
-    value = a + b * t
-    return max(0.1, min(1.0, value))
+def F1(t, fak):
+    val = fak[0] + fak[1] * t
+    return np.clip(val, 0.0, 1.0)
 
-def F2(t, params):
-    a, b = params
-    value = a + b * t
-    return max(0.1, min(1.0, value))
+def F2(t, fak):
+    val = fak[0] + fak[1] * t
+    return np.clip(val, 0.0, 1.0)
 
-def F3(t, params):
-    a, b = params
-    value = a + b * t
-    return max(0.1, min(1.0, value))
+def F3(t, fak):
+    val = fak[0] + fak[1] * t
+    return np.clip(val, 0.0, 1.0)
 
-def F4(t, params):
-    a, b = params
-    value = a + b * t
-    return max(0.1, min(1.0, value))
+def F4(t, fak):
+    val = fak[0] + fak[1] * t
+    return np.clip(val, 0.0, 1.0)
 
-def F5(t, params):
-    a, b = params
-    value = a + b * t
-    return max(0.1, min(1.0, value))
+def F5(t, fak):
+    val = fak[0] + fak[1] * t
+    return np.clip(val, 0.0, 1.0)
 
-# Линейные функции f_i(x) = k*x + b
-def fx(x, params):
-    k, b = params
-    result = k * x + b
-    return np.clip(result, 0.05, 0.95)
+def f1(X2, eq):
+    val = eq[1] + eq[0] * X2
+    return np.clip(val, 0.0, 1.0)
 
-# Система дифференциальных уравнений (3) из документа
-def pend(u, t, factors, f):
-    # u имеет 8 элементов: X1..X8
-    # factors: 5 внешних факторов
-    # f: 18 линейных функций f1..f18
+def f2(X3, eq):
+    val = eq[1] + eq[0] * X3
+    return np.clip(val, 0.0, 1.0)
+
+def f3(X4, eq):
+    val = eq[1] + eq[0] * X4
+    return np.clip(val, 0.0, 1.0)
+
+def f4(X4, eq):
+    val = eq[1] + eq[0] * X4
+    return np.clip(val, 0.0, 1.0)
+
+def f5(X6, eq):
+    val = eq[1] + eq[0] * X6
+    return np.clip(val, 0.0, 1.0)
+
+def f6(X7, eq):
+    val = eq[1] + eq[0] * X7
+    return np.clip(val, 0.0, 1.0)
+
+def f7(X8, eq):
+    val = eq[1] + eq[0] * X8
+    return np.clip(val, 0.0, 1.0)
+
+def f8(X7, eq):
+    val = eq[1] + eq[0] * X7
+    return np.clip(val, 0.0, 1.0)
+
+def f9(X1, eq):
+    val = eq[1] + eq[0] * X1
+    return np.clip(val, 0.0, 1.0)
+
+def f10(X2, eq):
+    val = eq[1] + eq[0] * X2
+    return np.clip(val, 0.0, 1.0)
+
+def f11(X7, eq):
+    val = eq[1] + eq[0] * X7
+    return np.clip(val, 0.0, 1.0)
+
+def f12(X1, eq):
+    val = eq[1] + eq[0] * X1
+    return np.clip(val, 0.0, 1.0)
+
+def f13(X2, eq):
+    val = eq[1] + eq[0] * X2
+    return np.clip(val, 0.0, 1.0)
+
+def f14(X2, eq):
+    val = eq[1] + eq[0] * X2
+    return np.clip(val, 0.0, 1.0)
+
+def f15(X2, eq):
+    val = eq[1] + eq[0] * X2
+    return np.clip(val, 0.0, 1.0)
+
+def f16(X3, eq):
+    val = eq[1] + eq[0] * X3
+    return np.clip(val, 0.0, 1.0)
+
+def f17(X4, eq):
+    val = eq[1] + eq[0] * X4
+    return np.clip(val, 0.0, 1.0)
+
+def f18(X2, eq):
+    val = eq[1] + eq[0] * X2
+    return np.clip(val, 0.0, 1.0)
+
+def pend(y, t, factors, equations):
+    dydt = np.zeros(8)
     
-    dudt = np.zeros(8)
+    F_values = []
+    F_functions = [F1, F2, F3, F4, F5]
+    for i in range(5):
+        f_val = F_functions[i](t, factors[i])
+        F_values.append(np.clip(f_val, 0.0, 1.0))
     
-    # Вычисляем внешние факторы в момент времени t
-    F1_val = F1(t, factors[0])
-    F2_val = F2(t, factors[1])
-    F3_val = F3(t, factors[2])
-    F4_val = F4(t, factors[3])
-    F5_val = F5(t, factors[4])
+    dydt[0] = F_values[0] * (f1(y[1], equations[0]) - y[0])
     
-    # Уравнение для X1
-    dudt[0] = F3_val - fx(u[1], f[0]) * fx(u[2], f[1]) * fx(u[3], f[2])
+    dydt[1] = F_values[1] * (f2(y[2], equations[1]) - y[1])
     
-    # Уравнение для X2
-    dudt[1] = (F1_val + F2_val + F4_val) * fx(u[3], f[3]) * fx(u[5], f[4]) * fx(u[6], f[5]) - \
-              (F3_val + F5_val) * fx(u[7], f[6])
+    dydt[2] = F_values[2] * (f3(y[3], equations[2]) - y[2])
     
-    # Уравнение для X3
-    dudt[2] = F4_val * fx(u[6], f[7]) - (F3_val + F5_val) * fx(u[0], f[8])
+    dydt[3] = F_values[3] * (f4(y[3], equations[3]) - y[3])
     
-    # Уравнение для X4
-    dudt[3] = F2_val * fx(u[1], f[9]) * fx(u[6], f[10]) - \
-              (F3_val + F5_val) * fx(u[0], f[11])
+    dydt[4] = f5(y[5], equations[4]) * f6(y[6], equations[5]) * 0.8
     
-    # Уравнение для X5
-    dudt[4] = fx(u[1], f[12]) - F5_val
+    dydt[5] = f7(y[7], equations[6]) * f8(y[6], equations[7]) * 0.8
     
-    # Уравнение для X6
-    dudt[5] = F2_val * fx(u[1], f[13]) - F5_val
+    dydt[6] = f9(y[0], equations[8]) * f10(y[1], equations[9]) * f11(y[6], equations[10]) * 0.6
     
-    # Уравнение для X7
-    dudt[6] = F2_val * fx(u[1], f[14]) * fx(u[2], f[15]) * fx(u[3], f[16]) - \
-              (F3_val + F5_val)
+    product = 1.0
+    for j in range(11, 18):
+        if j == 11: 
+            product *= f12(y[0], equations[j])
+        elif j == 12: 
+            product *= f13(y[1], equations[j])
+        elif j == 13:
+            product *= f14(y[1], equations[j])
+        elif j == 14: 
+            product *= f15(y[1], equations[j])
+        elif j == 15: 
+            product *= f16(y[2], equations[j])
+        elif j == 16:  
+            product *= f17(y[3], equations[j])
+        elif j == 17:  
+            product *= f18(y[1], equations[j])
     
-    # Уравнение для X8
-    dudt[7] = F5_val - fx(u[1], f[17])
+    dydt[7] = product * 0.5
     
-    # Ограничиваем скорость изменения
-    return np.clip(dudt, -0.5, 0.5)
+    dydt = np.clip(dydt, -0.8, 0.8)
+    
+    return dydt

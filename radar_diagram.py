@@ -1,4 +1,4 @@
-#radar_diagram.py
+# radar_diagram.py
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, RegularPolygon
@@ -76,7 +76,7 @@ class RadarDiagram:
         
         if initial_data is not None:
             initial_clipped = np.minimum(initial_data, restrictions)
-            axs.plot(theta, initial_clipped, color='r', linestyle='-', linewidth=1.5, label="Начальные значения")
+            axs.plot(theta, initial_clipped, color='r', linestyle='-', linewidth=1.5, label="Начальные условия")
         
         axs.legend(loc='upper right', bbox_to_anchor=(1.3, 1.0), fontsize='small')
         axs.set_varlabels([f"X{i+1}" for i in range(N)])
@@ -89,6 +89,7 @@ class RadarDiagram:
         
         plt.draw()
         return fig
+    
     def draw(self, filename, data, label, title, restrictions, initial_data=None):
         fig = self._render(data, label, title, restrictions, initial_data)
         fig.savefig(filename, bbox_inches='tight')
