@@ -103,57 +103,134 @@ def draw_factors(t, factors):
     
     # Используем фиксированные названия внешних факторов из документа
     line_labels = ["F₁", "F₂", "F₃", "F₄", "F₅"]
+    
+    # Метки для легенды с описаниями и формулами
     legend_labels = [
-        "F₁: Средняя выработка ресурса до списания",
-        "F₂: Доля иностранных воздушных судов", 
-        "F₃: Средний лётный стаж пилотов",
-        "F₄: Стоимость авиационного топлива",
-        "F₅: Количество нормативно-правовых актов"
+        "F₁ = a + b·t",
+        "F₂ = a + b·t", 
+        "F₃ = a + b·t",
+        "F₄ = a + b·t",
+        "F₅ = a + b·t"
     ]
     
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
     
-    for i, (F_func, color, line_label, legend_label) in enumerate(zip(F_FUNCTIONS, colors, line_labels, legend_labels)):
+    # Храним данные о кривых для размещения меток
+    curves_data = []
+    
+    for i, (F_func, color, line_label) in enumerate(zip(F_FUNCTIONS, colors, line_labels)):
         y_values = []
         for v in t:
             y_values.append(F_func(v, factors[i]))
         y_values = np.array(y_values)
         
         t_smooth, y_smooth = create_smooth_line(t, y_values)
-        line, = ax.plot(t_smooth, y_smooth, color=color, label=line_label, linewidth=2.5, antialiased=True, alpha=0.8)
         
-        if len(t_smooth) >= 10:
-            x_pos = t_smooth[-10]
-            y_pos = y_smooth[-10]
-        else:
-            x_pos = t_smooth[-1]
-            y_pos = y_smooth[-1]
+        # Сохраняем данные о кривой для размещения меток
+        curves_data.append((t_smooth, y_smooth, color, line_label))
+        
+        # Рисуем линию без метки в легенде (будет отдельно)
+        ax.plot(t_smooth, y_smooth, color=color, linewidth=2.5, antialiased=True, alpha=0.8)
+    
+    # Размещаем метки на линиях - случайно в первой половине линии
+    num_curves = len(curves_data)
+    
+    # Генерируем случайные позиции в первой половине временного интервала
+    np.random.seed(42)  # Фиксируем seed для воспроизводимости
+    
+    for idx, (t_curve, y_curve, color, label) in enumerate(curves_data):
+        # Определяем диапазон для размещения метки (первая половина линии)
+        t_min = t_curve[0]
+        t_max = t_curve[0] + 0.5 * (t_curve[-1] - t_curve[0])
+        
+        # Выбираем случайную позицию в первой половине
+        x_pos = np.random.uniform(t_min + 0.05 * (t_max - t_min), 
+                                  t_max - 0.05 * (t_max - t_min))
+        
+        # Находим ближайшую точку на кривой
+        closest_idx = np.argmin(np.abs(t_curve - x_pos))
+        
+        if closest_idx < len(y_curve):
+            y_pos = y_curve[closest_idx]
             
-        ax.text(
-            x_pos, y_pos, line_label,
-            color=color,
-            fontsize=8,
-            verticalalignment='center',
-            horizontalalignment='left',
-            bbox=dict(facecolor='white', edgecolor='none', alpha=0.6, pad=0.3)
-        )
+            # Вычисляем угол наклона кривой в этой точке
+            if closest_idx > 0 and closest_idx < len(y_curve) - 1:
+                # Используем конечные разности для вычисления производной
+                dy = y_curve[closest_idx + 1] - y_curve[closest_idx - 1]
+                dx = t_curve[closest_idx + 1] - t_curve[closest_idx - 1]
+                
+                if dx != 0:
+                    angle = np.degrees(np.arctan2(dy, dx))
+                else:
+                    angle = 90 if dy > 0 else -90
+            else:
+                angle = 0
+            
+            # Корректируем угол для лучшей читаемости
+            if angle > 90:
+                angle = angle - 180
+            elif angle < -90:
+                angle = angle + 180
+            
+            # Небольшое случайное смещение для избежания наложений
+            offset_multiplier = np.random.uniform(0.015, 0.025)
+            
+            if closest_idx > 0 and closest_idx < len(y_curve) - 1:
+                tx = t_curve[closest_idx + 1] - t_curve[closest_idx - 1]
+                ty = y_curve[closest_idx + 1] - y_curve[closest_idx - 1]
+                length = np.sqrt(tx*tx + ty*ty)
+                if length > 0:
+                    # Нормализованный вектор касательной
+                    tx_norm = tx / length
+                    ty_norm = ty / length
+                    # Вектор нормали (поворот на 90 градусов)
+                    nx = -ty_norm
+                    ny = tx_norm
+                    # Случайное смещение
+                    offset_x = offset_multiplier * nx
+                    offset_y = offset_multiplier * ny
+                else:
+                    offset_x = offset_multiplier
+                    offset_y = 0
+            else:
+                offset_x = offset_multiplier
+                offset_y = 0
+            
+            # Размещаем метку (более тонкая, без жирного шрифта)
+            ax.text(x_pos + offset_x, y_pos + offset_y, label, 
+                   color=color, fontsize=10,  # Уменьшил размер и убрал жирный
+                   verticalalignment='center', 
+                   horizontalalignment='center',
+                   rotation=angle,
+                   bbox=dict(boxstyle='round,pad=0.15',  # Уменьшил padding
+                           facecolor='white', 
+                           edgecolor='none', 
+                           alpha=0.85))
     
     ax.set_xlabel("Время (t)")
     ax.set_ylabel("Значения")
-    ax.set_title("Графики возмущений")
+    ax.set_title("График возмущений")
     
-    # Создаем легенду с описанием
+    # Создаем легенду с описаниями и формулами в правом верхнем углу
     from matplotlib.lines import Line2D
     legend_elements = []
     for i in range(len(legend_labels)):
         legend_elements.append(Line2D([0], [0], color=colors[i], lw=2, label=legend_labels[i]))
     
-    ax.legend(handles=legend_elements, fontsize=8, loc='upper left', bbox_to_anchor=(0, 1))
+    # Легенда в правом верхнем углу
+    ax.legend(handles=legend_elements, fontsize=8, loc='upper right')
     
     ax.grid(True, alpha=0.3)
-    ax.set_ylim(0, 1.5)
+    
+    # Устанавливаем диапазон 0-1
+    ax.set_ylim(0, 1.0)
+    
+    # Добавляем горизонтальную линию на уровне 1 для ориентира
+    ax.axhline(y=1.0, color='gray', linestyle='--', alpha=0.3, linewidth=0.5)
+    
     plt.tight_layout()
     return fig
+
 def create_graphics(t, data, factors):
     figs_b64 = []
     
@@ -187,14 +264,14 @@ def create_graphics(t, data, factors):
     ax1.grid(True, alpha=0.3)
     ax1.set_ylim(0, 1.0)
     
-    # Легенда для первого графика в правом верхнем углу
+    # Исправленная легенда для первого графика - используем метки характеристик
     legend_labels1 = [
-        f"F{subscript_numbers[1]} = a + b·t",
-        f"F{subscript_numbers[2]} = a + b·t", 
-        f"F{subscript_numbers[3]} = a + b·t",
-        f"F{subscript_numbers[4]} = a + b·t"
+        "X₁: Среднее количество нарушений инструкций пилотами",
+        "X₂: Доля частных судов в авиации", 
+        "X₃: Показатель активности органов контроля",
+        "X₄: Количество сотрудников в метеослужбах"
     ]
-    ax1.legend(legend_labels1, fontsize=9, loc='upper right')
+    ax1.legend(legend_labels1, fontsize=8, loc='upper right')
     
     # ВТОРОЙ ГРАФИК: характеристики X5-X8
     for i in range(4, 8):
@@ -208,14 +285,14 @@ def create_graphics(t, data, factors):
     ax2.grid(True, alpha=0.3)
     ax2.set_ylim(0, 1.0)
     
-    # Легенда для второго графика в правом верхнем углу
+    # Исправленная легенда для второго графика - используем метки характеристик
     legend_labels2 = [
-        f"F{subscript_numbers[5]} = a + b·t",
-        f"F{subscript_numbers[6]} = a + b·t",
-        f"F{subscript_numbers[7]} = a + b·t",
-        f"F{subscript_numbers[8]} = a + b·t"
+        "X₅: Катастрофы из-за метеоусловий",
+        "X₆: Катастрофы из-за технических неисправностей",
+        "X₇: Катастрофы из-за человеческого фактора",
+        "X₈: Общее количество катастроф"
     ]
-    ax2.legend(legend_labels2, fontsize=9, loc='upper right')
+    ax2.legend(legend_labels2, fontsize=8, loc='upper right')
     
     plt.tight_layout()
     figs_b64.append(_fig_to_base64(fig1))
